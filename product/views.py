@@ -1,10 +1,12 @@
+from django.db.models import Count
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Product, Category, Review
 from .serializers import (ProductListSerializer, ProductDetailSerializer,
                           CategoryListSerializer, CategoryDetailSerializer,
-                          ReviewListSerializer, ReviewDetailSerializer) 
+                          ReviewListSerializer, ReviewDetailSerializer,
+                          ProductReviewSerializer) 
 
 
 @api_view(http_method_names=['GET'])
@@ -35,29 +37,27 @@ def product_detail_api_view(request, pk):
 
 @api_view(http_method_names=['GET'])
 def category_list_api_view(request):
-    categories = Category.objects.all()
-    data = CategoryListSerializer(categories, many=True).data
+    categories = Category.objects.annotate(products_count=Count('products'))
+    
+    serializer = CategoryListSerializer(categories, many=True)
     return Response(
-        data=data, 
-        status=status.HTTP_200_OK  
+        data=serializer.data,
+        status=status.HTTP_200_OK
     )
 
 
 @api_view(http_method_names=['GET'])
 def category_detail_api_view(request, pk):
     try:
-        category = Category.objects.get(pk=pk)
+        category = Category.objects.annotate(products_count=Count('products')).get(pk=pk)
     except Category.DoesNotExist:
         return Response(
             data={'detail': 'Not found.'},
             status=status.HTTP_404_NOT_FOUND
         )
-    
-    data = CategoryDetailSerializer(category).data
-    return Response(
-        data=data,
-        status=status.HTTP_200_OK
-    )   
+
+    serializer = CategoryDetailSerializer(category)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(http_method_names=['GET'])
@@ -85,3 +85,13 @@ def review_detail_api_view(request, pk):
         data=data,
         status=status.HTTP_200_OK
     )
+
+
+
+@api_view(http_method_names=['GET'])
+def products_reviews_api_view(request):
+
+    products = Product.objects.all()
+    data = ProductReviewSerializer(products, many=True).data
+
+    return Response(data=data, status=status.HTTP_200_OK)
