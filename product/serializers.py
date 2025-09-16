@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from .models import Product, Category, Review
 
 
@@ -7,11 +8,28 @@ class ProductListSerializer(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
 
+    # Валидация конкретного поля
+    def validate_price(self, value):
+        if value < 0:
+            raise ValidationError("Цена не может быть отрицательной.")
+        return value
+
+    # Валидация всех данных сразу
+    def validate(self, attrs):
+        if attrs.get('title') and len(attrs['title']) < 3:
+            raise ValidationError({"title": "Название должно содержать минимум 3 символа."})
+        return attrs
+
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+
+    def validate_price(self, value):
+        if value < 0:
+            raise ValidationError("Цена не может быть отрицательной.")
+        return value
 
 
 class CategoryListSerializer(serializers.ModelSerializer):
@@ -19,7 +37,13 @@ class CategoryListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = "__all__" 
+        fields = "__all__"
+
+    def validate_name(self, value):
+        if len(value) < 2:
+            raise ValidationError("Название категории слишком короткое.")
+        return value
+
 
 class CategoryDetailSerializer(serializers.ModelSerializer):
     products_count = serializers.IntegerField(read_only=True)
@@ -28,17 +52,32 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
+    def validate_name(self, value):
+        if len(value) < 2:
+            raise ValidationError("Название категории слишком короткое.")
+        return value
+
 
 class ReviewListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
-        fields = '__all__'  
+        fields = '__all__'
+
+    def validate_stars(self, value):
+        if value < 1 or value > 10:
+            raise ValidationError("Рейтинг (stars) должен быть от 1 до 10.")
+        return value
 
 
 class ReviewDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = '__all__'
+
+    def validate_stars(self, value):
+        if value < 1 or value > 10:
+            raise ValidationError("Рейтинг (stars) должен быть от 1 до 10.")
+        return value
 
 
 class ProductReviewSerializer(serializers.ModelSerializer):
