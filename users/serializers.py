@@ -14,14 +14,19 @@ class AuthValidateSerializer(UserBaseSerializer):
 
 
 class RegisterValidateSerializer(UserBaseSerializer):
-    def validate_email(self, email):
-        try:
-            CustomUser.objects.get(email=email)
-        except:  # noqa: E722
-            return email
-        raise ValidationError('Email уже существует!')
+    phone_number = serializers.CharField()
 
-    
+    def validate_email(self, email):
+        if CustomUser.objects.filter(email=email).exists():
+            raise ValidationError('Email уже существует!')
+        return email
+
+    def validate_phone_number(self, phone_number):
+        if not phone_number.isdigit():
+            raise ValidationError('Номер телефона должен содержать только цифры!')
+        if len(phone_number) < 10:
+            raise ValidationError('Номер телефона слишком короткий!')
+        return phone_number
 
 
 class ConfirmationSerializer(serializers.Serializer):
