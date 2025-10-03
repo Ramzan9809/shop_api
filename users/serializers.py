@@ -1,28 +1,30 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
 from rest_framework.exceptions import ValidationError
-from .models import UserConfirmationCode
+from users.models import CustomUser
+from users.models import UserConfirmationCode as ConfirmationCode
 
 
-class AuthValidateSerializer(serializers.Serializer):
-    username = serializers.CharField()
+class UserBaseSerializer(serializers.Serializer):
+    email = serializers.EmailField()
     password = serializers.CharField()
 
 
-class RegisterValidateSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField()
+class AuthValidateSerializer(UserBaseSerializer):
+    pass
 
-    def validate_username(self, username):
+
+class RegisterValidateSerializer(UserBaseSerializer):
+    def validate_email(self, email):
         try:
-            User.objects.get(username=username)
-        except User.DoesNotExist:
-            return username
-        raise ValidationError('User already exists!')
+            CustomUser.objects.get(email=email)
+        except:  # noqa: E722
+            return email
+        raise ValidationError('Email уже существует!')
+
     
 
 
-class ConfirmCodeSerializer(serializers.Serializer):
+class ConfirmationSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
     code = serializers.CharField(max_length=6)
 
@@ -31,13 +33,14 @@ class ConfirmCodeSerializer(serializers.Serializer):
         code = attrs.get('code')
 
         try:
-            confirmation = UserConfirmationCode.objects.get(user_id=user_id)
-        except UserConfirmationCode.DoesNotExist:
-            raise ValidationError('Confirmation code not found for this user.')
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            raise ValidationError('User не существует!')
 
-        if confirmation.code != code:
-            raise ValidationError('Invalid confirmation code.')
+        try:
+            confirmation_code = ConfirmationCode.objects.get(user=user)
+        except ConfirmationCode.DoesNotExist:
+            raise ValidationError('Код подтверждения не найден!')
 
-        attrs['user'] = confirmation.user  # добавляем объект user для использования в view
-        attrs['confirmation'] = confirmation  # добавляем объект confirmation
-        return attrs
+        if confirmation_code.code != code:
+            raise ValidationError('Неверный код подтверждения!')

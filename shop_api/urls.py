@@ -4,7 +4,7 @@ from product.views import ( ProductDetailAPIView, ProductListAPIView,
                             CategoryDetailAPIView, CategoryListAPIView,
                             ReviewDetailAPIView, ReviewListAPIView,
                             ProductReviewAPIView)
-from users.views import RegistrationAPIView, AuthorizationAPIView, ConfirmRegistrationAPIView
+from users.views import RegistrationAPIView, AuthorizationAPIView, ConfirmUserAPIView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -18,5 +18,5 @@ urlpatterns = [
 
     path('registration/', RegistrationAPIView.as_view(), name='registration'),
     path('authorization/', AuthorizationAPIView.as_view(), name='authorization'),
-    path('confirm-registration/', ConfirmRegistrationAPIView.as_view(), name='confirm-registration'),
+    path('confirm-registration/', ConfirmUserAPIView.as_view(), name='confirm-registration'),
 ]

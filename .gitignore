@@ -264,3 +264,8 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/django,python
+
+# Игнорировать все файлы в папке migrations
+**/migrations/*
+# Но не игнорировать init.py
+!**/migrations/__init__.py

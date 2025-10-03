@@ -1,45 +1,54 @@
-from rest_framework.views import APIView
+from django.contrib.auth import authenticate
+from .serializers import RegisterValidateSerializer, AuthValidateSerializer, ConfirmationSerializer
+from .models import CustomUser 
+from rest_framework.generics import CreateAPIView
+from django.db import transaction
 from rest_framework.response import Response
 from rest_framework import status
-from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
 import random
-from .serializers import RegisterValidateSerializer, AuthValidateSerializer, ConfirmCodeSerializer
-from .models import UserConfirmationCode
+import string
+from rest_framework.authtoken.models import Token
+from .models import UserConfirmationCode as ConfirmationCode
 
 
-class RegistrationAPIView(APIView):
-    def post(self, request):
-        # step 0: Validation
-        serializer = RegisterValidateSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(
-                status=status.HTTP_400_BAD_REQUEST,
-                data={'errors': serializer.errors}
+class RegistrationAPIView(CreateAPIView):
+    serializer_class = RegisterValidateSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email']
+        password = serializer.validated_data['password']
+
+        # Use transaction to ensure data consistency
+        with transaction.atomic():
+            user = CustomUser.objects.create_user(
+                email=email,
+                password=password,
+                is_active=False
             )
 
-        # step 1: Create user
-        user = User.objects.create_user(
-            username=serializer.validated_data['username'],
-            password=serializer.validated_data['password'],
-            is_active=False
-        )
+            # Create a random 6-digit code
+            code = ''.join(random.choices(string.digits, k=6))
 
-        # step 1a: Generate 6-digit confirmation code and save
-        code = str(random.randint(100000, 999999))
-        UserConfirmationCode.objects.create(user=user, code=code)
+            confirmation_code = ConfirmationCode.objects.create(  # noqa: F841
+                user=user,
+                code=code
+            )
 
-        # step 2: Return response
         return Response(
             status=status.HTTP_201_CREATED,
-            data={'user_id': user.id, 'confirmation_code': code}
+            data={
+                'user_id': user.id,
+                'confirmation_code': code
+            }
         )
 
 
-class AuthorizationAPIView(APIView):
+class AuthorizationAPIView(CreateAPIView):
+    serializer_class = AuthValidateSerializer
     def post(self, request):
-        # step 0: Validation
         serializer = AuthValidateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -57,22 +66,15 @@ class AuthorizationAPIView(APIView):
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
-class ConfirmRegistrationAPIView(APIView):
+class ConfirmUserAPIView(CreateAPIView):
+    serializer_class = ConfirmationSerializer
     def post(self, request):
-        serializer = ConfirmCodeSerializer(data=request.data)
+        serializer = ConfirmationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.validated_data['user']
-        confirmation = serializer.validated_data['confirmation']
+        user_id = serializer.validated_data['user_id']
 
-        # Активируем пользователя
-        user.is_active = True
-        user.save()
-
-        # Удаляем код
-        confirmation.delete()
-
-        return Response(
-            status=status.HTTP_200_OK,
-            data={'message': 'User successfully activated'}
-        )
+        with transaction.atomic():
+            user = CustomUser.objects.get(id=user_id)
+            user.is_active = True
+            user.save()
