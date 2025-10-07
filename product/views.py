@@ -9,16 +9,29 @@ from .serializers import (
     ReviewListSerializer, ReviewDetailSerializer,
     ProductReviewSerializer
 )
+from common.permissions import IsOwner, IsAnonymous, CanEditWithIn15minutes, IsMaderator  
+from rest_framework.permissions import SAFE_METHODS
+
 
 
 class ProductListAPIView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductListSerializer
 
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [IsOwner()]
+        return [IsAnonymous() | IsMaderator()]  
+
 
 class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductDetailSerializer
+
+    def get_permissions(self):
+        if self.request.method in SAFE_METHODS:
+            return [IsAnonymous() | IsMaderator()]
+        return [IsOwner() & CanEditWithIn15minutes() | IsMaderator()]
 
 
 class CategoryListAPIView(generics.ListCreateAPIView):

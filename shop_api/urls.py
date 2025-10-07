@@ -5,6 +5,7 @@ from product.views import ( ProductDetailAPIView, ProductListAPIView,
                             ReviewDetailAPIView, ReviewListAPIView,
                             ProductReviewAPIView)
 from users.views import RegistrationAPIView, AuthorizationAPIView, ConfirmUserAPIView
+from . import swagger
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -20,3 +21,5 @@ urlpatterns = [
     path('authorization/', AuthorizationAPIView.as_view(), name='authorization'),
     path('confirm-registration/', ConfirmUserAPIView.as_view(), name='confirm-registration'),
 ]
+
+urlpatterns += swagger.urlpatterns
