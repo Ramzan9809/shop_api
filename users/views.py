@@ -9,6 +9,8 @@ import random
 import string
 from rest_framework.authtoken.models import Token
 from .models import UserConfirmationCode as ConfirmationCode
+from rest_framework_simplejwt.views import TokenObtainPairView
+from users.serializers import CustomTokenObtainPairSerializer
 
 
 class RegistrationAPIView(CreateAPIView):
@@ -79,3 +81,7 @@ class ConfirmUserAPIView(CreateAPIView):
             user = CustomUser.objects.get(id=user_id)
             user.is_active = True
             user.save()
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer

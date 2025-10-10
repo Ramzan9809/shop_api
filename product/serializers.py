@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from .models import Product, Category, Review
+from common.validators import validate_user_age_from_token
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -18,6 +19,9 @@ class ProductListSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs.get('title') and len(attrs['title']) < 3:
             raise ValidationError({"title": "Название должно содержать минимум 3 символа."})
+        
+        request = self.context.get('request')
+        validate_user_age_from_token(request)
         return attrs
 
 

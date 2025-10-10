@@ -11,7 +11,7 @@ from .serializers import (
 )
 from common.permissions import IsOwner, IsAnonymous, CanEditWithIn15minutes, IsMaderator  
 from rest_framework.permissions import SAFE_METHODS
-
+from common.validators import validate_user_age_from_token
 
 
 class ProductListAPIView(generics.ListCreateAPIView):
@@ -22,6 +22,10 @@ class ProductListAPIView(generics.ListCreateAPIView):
         if self.request.method == "POST":
             return [IsOwner()]
         return [IsAnonymous() | IsMaderator()]  
+    
+    def perform_create(self, serializer):
+        validate_user_age_from_token(self.request)
+        serializer.save(owner=self.request.user)
 
 
 class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

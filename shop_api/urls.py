@@ -6,6 +6,12 @@ from product.views import ( ProductDetailAPIView, ProductListAPIView,
                             ProductReviewAPIView)
 from users.views import RegistrationAPIView, AuthorizationAPIView, ConfirmUserAPIView
 from . import swagger
+from rest_framework_simplejwt.views import (
+    TokenRefreshView,
+    TokenVerifyView,
+)
+from users.views import CustomTokenObtainPairView
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -20,6 +26,12 @@ urlpatterns = [
     path('registration/', RegistrationAPIView.as_view(), name='registration'),
     path('authorization/', AuthorizationAPIView.as_view(), name='authorization'),
     path('confirm-registration/', ConfirmUserAPIView.as_view(), name='confirm-registration'),
+
+    path('confirm/', ConfirmUserAPIView.as_view()),
+
+    path('jwt/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('jwt/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('jwt/verify/', TokenVerifyView.as_view(), name='token_verify'),
 ]
 
 urlpatterns += swagger.urlpatterns
