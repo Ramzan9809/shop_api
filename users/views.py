@@ -29,7 +29,8 @@ class RegistrationAPIView(CreateAPIView):
                 email=email,
                 password=password,
                 phone_number=serializer.validated_data['phone_number'],
-                is_active=False
+                birthdate=serializer.validated_data['birthdate'],
+                is_active=True
             )
 
             # Create a random 6-digit code
@@ -57,7 +58,7 @@ class AuthorizationAPIView(CreateAPIView):
 
         # step 1: Authentication
         user = authenticate(
-            username=serializer.validated_data['username'],
+            email=serializer.validated_data['email'],
             password=serializer.validated_data['password']
         )
 
@@ -71,16 +72,17 @@ class AuthorizationAPIView(CreateAPIView):
 
 class ConfirmUserAPIView(CreateAPIView):
     serializer_class = ConfirmationSerializer
-    def post(self, request):
-        serializer = ConfirmationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token["email"] = user.email
+        token["birthdate"] = str(user.birthdate) if user.birthdate else None
+        return token
 
-        user_id = serializer.validated_data['user_id']
-
-        with transaction.atomic():
-            user = CustomUser.objects.get(id=user_id)
-            user.is_active = True
-            user.save()
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['email'] = self.user.email
+        data['birthdate'] = str(self.user.birthdate) if self.user.birthdate else None
+        return data
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):

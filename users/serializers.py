@@ -12,11 +12,13 @@ class UserBaseSerializer(serializers.Serializer):
 
 
 class AuthValidateSerializer(UserBaseSerializer):
-    pass
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True, required=True)
 
 
 class RegisterValidateSerializer(UserBaseSerializer):
     phone_number = serializers.CharField()
+    birthdate = serializers.DateField()
 
     def validate_email(self, email):
         if CustomUser.objects.filter(email=email).exists():
@@ -58,9 +60,14 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token["email"] = user.email
-        token["birthdate"] = user.birthdate.isoformat() if user.birthdate else None
+        token["birthdate"] = str(user.birthdate)
         return token
     
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['email'] = self.user.email
+        data['birthdate'] = str(self.user.birthdate)
+        return data
 
 class OauthCodeSerializer(serializers.Serializer):
     code = serializers.CharField()
