@@ -60,3 +60,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token["email"] = user.email
         token["birthdate"] = user.birthdate.isoformat() if user.birthdate else None
         return token
+    
+
+class OauthCodeSerializer(serializers.Serializer):
+    code = serializers.CharField()

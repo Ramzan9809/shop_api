@@ -11,6 +11,7 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 from users.views import CustomTokenObtainPairView
+from users.google_oauth import GoogleLoginAPIView
 
 
 urlpatterns = [
@@ -32,6 +33,8 @@ urlpatterns = [
     path('jwt/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('jwt/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('jwt/verify/', TokenVerifyView.as_view(), name='token_verify'),
+
+    path('google-login/', GoogleLoginAPIView.as_view()),
 ]
 
 urlpatterns += swagger.urlpatterns
