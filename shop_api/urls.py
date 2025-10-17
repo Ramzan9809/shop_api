@@ -4,7 +4,7 @@ from product.views import ( ProductDetailAPIView, ProductListAPIView,
                             CategoryDetailAPIView, CategoryListAPIView,
                             ReviewDetailAPIView, ReviewListAPIView,
                             ProductReviewAPIView)
-from users.views import RegistrationAPIView, AuthorizationAPIView, ConfirmUserAPIView
+from users.views import RegistrationAPIView, AuthorizationAPIView, ConfirmUserAPIView, SendCodeView, VerifyCodeView
 from . import swagger
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
@@ -35,6 +35,9 @@ urlpatterns = [
     path('jwt/verify/', TokenVerifyView.as_view(), name='token_verify'),
 
     path('api/v1/users/google-login/', GoogleLoginAPIView.as_view()),
+
+    path('api/v1/send-code/', SendCodeView.as_view(), name='send-code'),
+    path('api/v1/verify-code/', VerifyCodeView.as_view(), name='verify)-code'),
 ]
 
 urlpatterns += swagger.urlpatterns

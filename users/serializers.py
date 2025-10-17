@@ -1,10 +1,17 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from users.models import CustomUser
-from users.models import UserConfirmationCode as ConfirmationCode
+# from users.models import UserConfirmation Code as ConfirmationCode
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from services.confirmation_code import validate_confirmation_code
 
 
+class SendCodeSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(required=True)
+
+class VerifyCodeSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(required=True)
+    code = serializers.CharField(max_length=6, required=True)
 
 class UserBaseSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -41,19 +48,17 @@ class ConfirmationSerializer(serializers.Serializer):
         user_id = attrs.get('user_id')
         code = attrs.get('code')
 
+        # Проверяем существует ли пользователь
         try:
             user = CustomUser.objects.get(id=user_id)
         except CustomUser.DoesNotExist:
-            raise ValidationError('User не существует!')
+            raise ValidationError('Пользователь не существует!')
 
-        try:
-            confirmation_code = ConfirmationCode.objects.get(user=user)
-        except ConfirmationCode.DoesNotExist:
-            raise ValidationError('Код подтверждения не найден!')
+        # Проверяем код через Redis
+        if not validate_confirmation_code(user.id, code):
+            raise ValidationError('Неверный или истекший код подтверждения!')
 
-        if confirmation_code.code != code:
-            raise ValidationError('Неверный код подтверждения!')
-        
+        return attrs
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod

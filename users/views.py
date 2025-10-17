@@ -1,5 +1,5 @@
 from django.contrib.auth import authenticate
-from .serializers import RegisterValidateSerializer, AuthValidateSerializer, ConfirmationSerializer
+from .serializers import RegisterValidateSerializer, AuthValidateSerializer, ConfirmationSerializer, VerifyCodeSerializer, SendCodeSerializer
 from .models import CustomUser 
 from rest_framework.generics import CreateAPIView
 from django.db import transaction
@@ -11,7 +11,9 @@ from rest_framework.authtoken.models import Token
 from .models import UserConfirmationCode as ConfirmationCode
 from rest_framework_simplejwt.views import TokenObtainPairView
 from users.serializers import CustomTokenObtainPairSerializer
-
+from rest_framework.views import APIView
+from services.confirmation_code import save_confirmation_code, validate_confirmation_code
+from drf_yasg.utils import swagger_auto_schema
 
 class RegistrationAPIView(CreateAPIView):
     serializer_class = RegisterValidateSerializer
@@ -87,3 +89,31 @@ class ConfirmUserAPIView(CreateAPIView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class SendCodeView(APIView):
+    @swagger_auto_schema(request_body=SendCodeSerializer)
+    def post(self, request):
+        serializer = SendCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user_id = serializer.validated_data['user_id']
+        code = str(random.randint(100000, 999999))
+        save_confirmation_code(user_id, code)
+
+        return Response({"detail": f"Код {code} отправлен пользователю {user_id}"}, status=status.HTTP_200_OK)
+
+
+class VerifyCodeView(APIView):
+    @swagger_auto_schema(request_body=VerifyCodeSerializer)
+    def post(self, request):
+        serializer = VerifyCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user_id = serializer.validated_data['user_id']
+        code = serializer.validated_data['code']
+
+        if validate_confirmation_code(user_id, code):
+            return Response({"detail": "Код подтверждён"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"detail": "Неверный или истекший код"}, status=status.HTTP_400_BAD_REQUEST)

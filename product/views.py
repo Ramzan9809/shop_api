@@ -12,6 +12,7 @@ from .serializers import (
 from common.permissions import IsOwner, IsAnonymous, CanEditWithIn15minutes, IsMaderator  
 from rest_framework.permissions import SAFE_METHODS
 from common.validators import validate_user_age_from_token
+from django.core.cache import cache
 
 
 class ProductListAPIView(generics.ListCreateAPIView):
@@ -26,6 +27,17 @@ class ProductListAPIView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         validate_user_age_from_token(self.request)
         serializer.save(owner=self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        cached_data = cache.get("product_list")
+        if cached_data:
+            print("Redis")
+            return Response(data=cached_data, status=status.HTTP_200_OK)
+        response = super().get(self, request, *args, **kwargs)
+        print("Postgres")
+        if response.data.get("total", 0) > 0:
+            cache.set("product_list", response.data, timeout=300)
+        return response
 
 
 class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
