@@ -14,6 +14,9 @@ from users.serializers import CustomTokenObtainPairSerializer
 from rest_framework.views import APIView
 from services.confirmation_code import save_confirmation_code, validate_confirmation_code
 from drf_yasg.utils import swagger_auto_schema
+from users.tasks import send_otp_email
+from .tasks import generate_verification_code
+
 
 class RegistrationAPIView(CreateAPIView):
     serializer_class = RegisterValidateSerializer
@@ -25,7 +28,6 @@ class RegistrationAPIView(CreateAPIView):
         email = serializer.validated_data['email']
         password = serializer.validated_data['password']
 
-        # Use transaction to ensure data consistency
         with transaction.atomic():
             user = CustomUser.objects.create_user(
                 email=email,
@@ -35,13 +37,15 @@ class RegistrationAPIView(CreateAPIView):
                 is_active=True
             )
 
-            # Create a random 6-digit code
             code = ''.join(random.choices(string.digits, k=6))
 
-            confirmation_code = ConfirmationCode.objects.create(  # noqa: F841
+            confirmation_code = ConfirmationCode.objects.create(  
                 user=user,
                 code=code
             )
+            send_otp_email.delay(email, code)
+
+        generate_verification_code.delay()
 
         return Response(
             status=status.HTTP_201_CREATED,

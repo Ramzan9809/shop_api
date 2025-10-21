@@ -171,6 +171,34 @@ USE_I18N = True
 USE_TZ = True
 
 
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/1"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/1"
+
+EMAIL_USE_TLS = True
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+
+
+from celery.schedules import crontab
+
+app.conf.beat_schedule = {
+    "delete_old_verification_codes": {
+        "task": "users.tasks.delete_old_verification_codes",  
+        "schedule": crontab(minute="0", hour="0"), 
+    },
+}
+
+app.conf.beat_schedule = {
+    "send_daily_report_email": {
+        "task": "users.tasks.send_daily_report_email",  
+        "schedule": crontab(minute="0", hour="9"),  
+    },
+}
+
+
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
