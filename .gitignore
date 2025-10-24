@@ -147,6 +147,10 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
+
+
+celerybeat-schedule
+
 # mkdocs documentation
 /site
 
